@@ -1,5 +1,4 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor_sync_plugin/appflowy_editor_sync_utility_functions.dart';
 import 'package:example/home_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,8 +14,6 @@ void main() async {
       const SystemUiOverlayStyle(systemNavigationBarColor: Colors.transparent),
     );
   }
-  // Important for Offline Collaboration
-  await AppflowyEditorSyncUtilityFunctions.initAppFlowyEditorSync();
 
   runApp(const MyApp());
 }
@@ -33,7 +30,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         AppFlowyEditorLocalizations.delegate,
       ],
-      supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+      supportedLocales: [Locale('ko', 'KR'), Locale('en')],
       debugShowCheckedModeBanner: false,
       home: const HomePage(),
       theme: ThemeData.light(useMaterial3: true),
