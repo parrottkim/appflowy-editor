@@ -31,10 +31,6 @@ dependencies:
     sdk: flutter
 
   appflowy_editor:
-  appflowy_editor_sync_plugin:
-    git:
-      url: https://github.com/Musta-Pollo/appflowy_editor_sync_plugin.git
-      ref: main
 
   provider: ^6.0.3
   url_launcher: ^6.1.5
@@ -43,7 +39,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   file_picker: ^10.2.0
-  universal_html: ^2.0.8
+  web: ^1.1.0
   highlight: ^0.7.0
   http: ^1.1.0
   show_fps: ^1.0.6

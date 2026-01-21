@@ -7,9 +7,6 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:example/pages/animated_markdown_page.dart';
 import 'package:example/pages/auto_complete_editor.dart';
 import 'package:example/pages/auto_expand_editor.dart';
-import 'package:example/pages/collab_editor.dart';
-import 'package:example/pages/collab_editor_offline.dart';
-import 'package:example/pages/collab_selection_editor.dart';
 import 'package:example/pages/customize_theme_for_editor.dart';
 import 'package:example/pages/drag_to_reorder_editor.dart';
 import 'package:example/pages/editor.dart';
@@ -23,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
-import 'package:universal_html/html.dart' as html;
 import 'package:universal_platform/universal_platform.dart';
 
 enum ExportFileType {
@@ -203,30 +199,6 @@ class _HomePageState extends State<HomePage> {
               ),
             );
           }),
-          _buildListTile(context, 'Collab Editor', () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CollabEditor(),
-              ),
-            );
-          }),
-          _buildListTile(context, 'Collab Selection', () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CollabSelectionEditor(),
-              ),
-            );
-          }),
-          _buildListTile(context, 'Collab Offline', () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CollabEditorOffline(),
-              ),
-            );
-          }),
           _buildListTile(context, 'Custom Theme', () {
             Navigator.push(
               context,
@@ -391,56 +363,56 @@ class _HomePageState extends State<HomePage> {
         throw UnimplementedError();
     }
 
-    if (kIsWeb) {
-      final blob = html.Blob([result], 'text/plain', 'native');
-      html.AnchorElement(
-        href: html.Url.createObjectUrlFromBlob(blob).toString(),
-      )
-        ..setAttribute('download', 'document.${fileType.extension}')
-        ..click();
-    } else if (UniversalPlatform.isMobile) {
-      final appStorageDirectory = await getApplicationDocumentsDirectory();
+    // if (kIsWeb) {
+    //   final blob = html.Blob([result], 'text/plain', 'native');
+    //   html.AnchorElement(
+    //     href: html.Url.createObjectUrlFromBlob(blob).toString(),
+    //   )
+    //     ..setAttribute('download', 'document.${fileType.extension}')
+    //     ..click();
+    // } else if (UniversalPlatform.isMobile) {
+    //   final appStorageDirectory = await getApplicationDocumentsDirectory();
 
-      final path = File(
-        '${appStorageDirectory.path}/${DateTime.now()}.${fileType.extension}',
-      );
-      await path.writeAsString(result);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'This document is saved to the ${appStorageDirectory.path}',
-            ),
-          ),
-        );
-      }
-    } else {
-      // for desktop
-      final path = await FilePicker.platform.saveFile(
-        fileName: 'document.${fileType.extension}',
-      );
-      if (path != null) {
-        await File(path).writeAsString(result);
-        if (fileType == ExportFileType.pdf) {
-          final pdf = await PdfHTMLEncoder(
-            fontFallback: [
-              await PdfGoogleFonts.notoColorEmoji(),
-              await PdfGoogleFonts.notoColorEmojiRegular(),
-            ],
-          ).convert(result);
+    //   final path = File(
+    //     '${appStorageDirectory.path}/${DateTime.now()}.${fileType.extension}',
+    //   );
+    //   await path.writeAsString(result);
+    //   if (mounted) {
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(
+    //         content: Text(
+    //           'This document is saved to the ${appStorageDirectory.path}',
+    //         ),
+    //       ),
+    //     );
+    //   }
+    // } else {
+    //   // for desktop
+    //   final path = await FilePicker.platform.saveFile(
+    //     fileName: 'document.${fileType.extension}',
+    //   );
+    //   if (path != null) {
+    //     await File(path).writeAsString(result);
+    //     if (fileType == ExportFileType.pdf) {
+    //       final pdf = await PdfHTMLEncoder(
+    //         fontFallback: [
+    //           await PdfGoogleFonts.notoColorEmoji(),
+    //           await PdfGoogleFonts.notoColorEmojiRegular(),
+    //         ],
+    //       ).convert(result);
 
-          await File(path).writeAsBytes(await pdf.save());
-        }
+    //       await File(path).writeAsBytes(await pdf.save());
+    //     }
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('This document is saved to the $path'),
-            ),
-          );
-        }
-      }
-    }
+    //     if (mounted) {
+    //       ScaffoldMessenger.of(context).showSnackBar(
+    //         SnackBar(
+    //           content: Text('This document is saved to the $path'),
+    //         ),
+    //       );
+    //     }
+    //   }
+    // }
   }
 
   void _importFile(ExportFileType fileType) async {
