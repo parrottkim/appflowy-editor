@@ -416,7 +416,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _importFile(ExportFileType fileType) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       allowMultiple: false,
       allowedExtensions: [fileType.extension],
       type: FileType.custom,
