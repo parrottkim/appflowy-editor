@@ -414,31 +414,31 @@ extension InsertImage on EditorState {
       return;
     }
     final transaction = this.transaction;
-    // if the current node is empty paragraph, replace it with image node
+
+    transaction.beforeSelection = selection;
+
+    final imagePath =
+        node.type == ParagraphBlockKeys.type && (node.delta?.isEmpty ?? false)
+            ? node.path
+            : node.path.next;
+
+    // 1. 이미지 노드 삽입
+    transaction.insertNode(
+      imagePath,
+      imageNode(url: src),
+    );
+
+    // 2. 이미 기존 비어있던 문단이면 삭제
     if (node.type == ParagraphBlockKeys.type &&
         (node.delta?.isEmpty ?? false)) {
-      transaction
-        ..insertNode(
-          node.path,
-          imageNode(
-            url: src,
-          ),
-        )
-        ..deleteNode(node);
-    } else {
-      transaction.insertNode(
-        node.path.next,
-        imageNode(
-          url: src,
-        ),
-      );
+      transaction.deleteNode(node);
     }
 
+    final newLinePath = imagePath.next;
+    transaction.insertNode(newLinePath, paragraphNode());
+
     transaction.afterSelection = Selection.collapsed(
-      Position(
-        path: node.path.next,
-        offset: 0,
-      ),
+      Position(path: node.path.next, offset: 0),
     );
 
     return apply(transaction);
