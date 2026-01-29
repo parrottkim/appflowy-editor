@@ -67,26 +67,19 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
   }
 
   String _formatMarkdown(String markdown) {
-    // Rule 1: single '\n' between text and image, add double '\n'
+    // 1. Isolate every image by adding double newlines before and after it.
+    // This ensures that images are separated from surrounding text and other images,
+    // which is essential for the parser to treat each image as a standalone block.
     String result = markdown.replaceAllMapped(
-      RegExp(r'([^\n])\n!\[([^\]]*)\]\(([^)]+)\)', multiLine: true),
-      (match) {
-        final text = match[1] ?? '';
-        final altText = match[2] ?? '';
-        final url = match[3] ?? '';
-
-        return '$text\n\n![$altText]($url)';
-      },
+      RegExp(r'!\[([^\]]*)\]\(([^)]+)\)'),
+      (match) => '\n\n${match.group(0)}\n\n',
     );
 
-    // Rule 2: without '\n' between text and image, add double '\n'
-    result = result.replaceAllMapped(
-      RegExp(r'([^\n])!\[([^\]]*)\]\(([^)]+)\)'),
-      (match) => '${match[1]}\n\n![${match[2]}](${match[3]})',
-    );
+    // 2. Normalize excessive newlines (3 or more) into a single blank line (\n\n).
+    // This cleans up any redundant spacing created by the isolation step
+    // while maintaining valid Markdown block structures.
+    result = result.replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
-    // Add another rules here.
-
-    return result;
+    return result.trim();
   }
 }
