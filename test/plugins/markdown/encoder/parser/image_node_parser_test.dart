@@ -12,12 +12,29 @@ void main() async {
       );
 
       final result = const ImageNodeParser().transform(node, null);
-      expect(result, '![](https://appflowy.io)');
+      expect(result, '![](https://appflowy.io)\n');
     });
 
     test('ImageNodeParser id getter', () {
       const imageNodeParser = ImageNodeParser();
       expect(imageNodeParser.id, 'image');
+    });
+
+    test('parser image node with next node (no trailing newline)', () {
+      final pageNode = Node(type: 'page', children: [
+        Node(
+          type: 'image',
+          attributes: {
+            'url': 'https://appflowy.io/image.png',
+          },
+        ),
+        Node(type: 'paragraph'),
+      ]);
+
+      final imageNode = pageNode.children[0];
+      final result = const ImageNodeParser().transform(imageNode, null);
+      // When there's a next node, trailing newline should be added
+      expect(result, '![](https://appflowy.io/image.png)\n');
     });
   });
 }
