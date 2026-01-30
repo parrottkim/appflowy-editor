@@ -34,7 +34,15 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
         .map((e) => _parseNode(e))
         .nonNulls
         .flattened
-        .toList(growable: false); // avoid lazy evaluation
+        .toList(growable: true); // allow modification
+
+    // If the document ends with an image, add an empty paragraph for cursor positioning
+    if (nodes.isNotEmpty &&
+        nodes.last.type == ImageBlockKeys.type &&
+        (nodes.last.next == null)) {
+      nodes.add(paragraphNode());
+    }
+
     if (nodes.isNotEmpty) {
       document.insert([0], nodes);
     }
@@ -80,6 +88,11 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
     // while maintaining valid Markdown block structures.
     result = result.replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
-    return result.trim();
+    // Trim leading whitespace and normalize trailing whitespace
+    result = result.trimLeft();
+    // Only trim trailing spaces/tabs, preserve newlines for proper markdown parsing
+    result = result.replaceAll(RegExp(r'[ \t]+$'), '');
+
+    return result;
   }
 }
