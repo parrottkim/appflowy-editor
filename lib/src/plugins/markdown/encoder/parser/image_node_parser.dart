@@ -8,6 +8,8 @@ class ImageNodeParser extends NodeParser {
 
   @override
   String transform(Node node, DocumentMarkdownEncoder? encoder) {
-    return '![](${node.attributes[ImageBlockKeys.url]})';
+    final imageMarkdown = '![](${node.attributes[ImageBlockKeys.url]})';
+    final suffix = node.next == null ? '' : '\n';
+    return '$imageMarkdown$suffix';
   }
 }

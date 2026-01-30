@@ -18,6 +18,7 @@ class MarkdownImageParserV2 extends CustomMarkdownParser {
     if (element.attributes['src'] != null) {
       return [
         imageNode(url: element.attributes['src']!),
+        paragraphNode(),
       ];
     }
 
@@ -33,6 +34,7 @@ class MarkdownImageParserV2 extends CustomMarkdownParser {
 
     return [
       imageNode(url: ec.attributes['src']!),
+      paragraphNode(),
     ];
   }
 }
