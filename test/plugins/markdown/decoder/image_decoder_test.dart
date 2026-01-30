@@ -18,6 +18,9 @@ void main() async {
           'align': 'center',
         },
       });
+      // After the image, there should be an empty paragraph for the cursor to be positioned
+      expect(result.root.children[1].type, 'paragraph');
+      expect(result.root.children[1].delta?.isEmpty, true);
     });
   });
 }
