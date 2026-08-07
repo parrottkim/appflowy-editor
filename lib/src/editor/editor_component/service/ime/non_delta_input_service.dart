@@ -4,6 +4,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/ime/text_diff.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/ime/text_input_service.dart';
 import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 // string from flutter callback
@@ -18,7 +19,16 @@ class NonDeltaTextInputService extends TextInputService with TextInputClient {
     required super.onPerformAction,
     super.contentInsertionConfiguration,
     super.onFloatingCursor,
+    @visibleForTesting this.isWebOnMacOS,
   });
+
+  /// Overrides Web-on-macOS detection in tests.
+  @visibleForTesting
+  final bool? isWebOnMacOS;
+
+  bool get _isMacOSWeb => isWebOnMacOS ?? PlatformExtension.isWebOnMacOS;
+
+  bool get _usesMacOSIME => PlatformExtension.isMacOS || _isMacOSWeb;
 
   @override
   TextRange? composingTextRange;
@@ -71,6 +81,20 @@ class NonDeltaTextInputService extends TextInputService with TextInputClient {
     TextInputConfiguration configuration,
   ) {
     final formattedValue = textEditingValue.format();
+    final composing = composingTextRange;
+
+    // On macOS Web, pushing the document state back to the browser while the
+    // browser owns an active composition makes CJK text flicker and can split
+    // the composing text. The input connection is already attached while a
+    // composition is active, so let the browser finish it before syncing.
+    if (_isMacOSWeb &&
+        (_textInputConnection?.attached ?? false) &&
+        composing != null &&
+        composing.isValid &&
+        !composing.isCollapsed) {
+      return;
+    }
+
     if (!formattedValue.isValid() ||
         currentTextEditingValue == formattedValue) {
       return;
@@ -272,8 +296,7 @@ class NonDeltaTextInputService extends TextInputService with TextInputClient {
     }
 
     // solve the issue where the Chinese IME doesn't continue deleting after the input content has been deleted.
-    if (PlatformExtension.isMacOS &&
-        (composingTextRange?.isCollapsed ?? false)) {
+    if (_usesMacOSIME && (composingTextRange?.isCollapsed ?? false)) {
       composingTextRange = TextRange.empty;
     }
   }

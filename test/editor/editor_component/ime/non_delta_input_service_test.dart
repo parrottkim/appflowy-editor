@@ -106,6 +106,122 @@ void main() {
       expect(completer.future, completion(true));
     });
 
+    test('does not sync editing state during macOS Web composition', () {
+      final inputService = NonDeltaTextInputService(
+        onInsert: (_) async => true,
+        onDelete: (_) async => true,
+        onReplace: (_) async => true,
+        onNonTextUpdate: (_) async => true,
+        onPerformAction: (_) async {},
+        isWebOnMacOS: true,
+      );
+      inputService
+        ..attach(
+          const TextEditingValue(
+            text: 'before',
+            selection: TextSelection.collapsed(offset: 6),
+          ),
+          const TextInputConfiguration(),
+        )
+        ..composingTextRange = const TextRange(start: 0, end: 9)
+        ..attach(
+          const TextEditingValue(
+            text: 'composing',
+            selection: TextSelection.collapsed(offset: 9),
+            composing: TextRange(start: 0, end: 9),
+          ),
+          const TextInputConfiguration(),
+        );
+
+      expect(
+        inputService.currentTextEditingValue,
+        const TextEditingValue(
+          text: ' before',
+          selection: TextSelection.collapsed(offset: 7),
+        ),
+      );
+      expect(inputService.attached, isTrue);
+    });
+
+    test('reattaches a disconnected macOS Web input service', () {
+      final inputService = NonDeltaTextInputService(
+        onInsert: (_) async => true,
+        onDelete: (_) async => true,
+        onReplace: (_) async => true,
+        onNonTextUpdate: (_) async => true,
+        onPerformAction: (_) async {},
+        isWebOnMacOS: true,
+      )..composingTextRange = const TextRange(start: 0, end: 1);
+
+      inputService.attach(
+        const TextEditingValue(
+          text: 'ㅎ',
+          selection: TextSelection.collapsed(offset: 1),
+          composing: TextRange(start: 0, end: 1),
+        ),
+        const TextInputConfiguration(),
+      );
+
+      expect(inputService.attached, isTrue);
+      expect(
+        inputService.currentTextEditingValue,
+        const TextEditingValue(
+          text: ' ㅎ',
+          selection: TextSelection.collapsed(offset: 2),
+          composing: TextRange(start: 1, end: 2),
+        ),
+      );
+    });
+
+    test('clears a collapsed composing range on macOS Web', () async {
+      final inputService = NonDeltaTextInputService(
+        onInsert: (_) async => true,
+        onDelete: (_) async => true,
+        onReplace: (_) async => true,
+        onNonTextUpdate: (_) async => true,
+        onPerformAction: (_) async {},
+        isWebOnMacOS: true,
+      );
+
+      await inputService.apply(
+        const [
+          TextEditingDeltaNonTextUpdate(
+            oldText: ' 한',
+            selection: TextSelection.collapsed(offset: 2),
+            composing: TextRange.collapsed(2),
+          ),
+        ],
+      );
+
+      expect(inputService.composingTextRange, TextRange.empty);
+    });
+
+    test('keeps an active composing range on macOS Web', () async {
+      final inputService = NonDeltaTextInputService(
+        onInsert: (_) async => true,
+        onDelete: (_) async => true,
+        onReplace: (_) async => true,
+        onNonTextUpdate: (_) async => true,
+        onPerformAction: (_) async {},
+        isWebOnMacOS: true,
+      );
+
+      await inputService.apply(
+        const [
+          TextEditingDeltaNonTextUpdate(
+            oldText: ' ㅎ',
+            selection: TextSelection.collapsed(offset: 2),
+            composing: TextRange(start: 1, end: 2),
+          ),
+        ],
+      );
+
+      expect(
+        inputService.composingTextRange,
+        const TextRange(start: 0, end: 1),
+      );
+    });
+
     test('Delta insertion format', () {
       const insertion = TextEditingDeltaInsertion(
         oldText: '',
