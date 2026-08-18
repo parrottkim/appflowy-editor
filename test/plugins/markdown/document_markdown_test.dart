@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:markdown/markdown.dart' as md;
 
 void main() {
   group('document_markdown.dart tests', () {
@@ -18,6 +19,109 @@ void main() {
       expect(document.root.children.length, 2);
       expect(document.root.children[0].delta?.toPlainText(), 'first line');
       expect(document.root.children[1].delta?.toPlainText(), 'second line');
+    });
+
+    test('preserves empty paragraphs', () {
+      const markdown = 'first\n\n# heading\n\nlast';
+      final document = markdownToDocument(markdown);
+      final nodes = document.root.children;
+
+      expect(nodes.length, 5);
+      expect(nodes[0].delta?.toPlainText(), 'first');
+      expect(nodes[1].type, ParagraphBlockKeys.type);
+      expect(nodes[1].delta?.isEmpty, isTrue);
+      expect(nodes[2].type, HeadingBlockKeys.type);
+      expect(nodes[3].type, ParagraphBlockKeys.type);
+      expect(nodes[3].delta?.isEmpty, isTrue);
+      expect(nodes[4].delta?.toPlainText(), 'last');
+    });
+
+    test('preserved empty paragraphs are stable after a markdown round trip',
+        () {
+      const markdown = 'first\n\n# heading\n\nlast';
+      final document = markdownToDocument(markdown);
+      final encoded = documentToMarkdown(document);
+      final restored = markdownToDocument(encoded);
+
+      expect(encoded, '$markdown\n');
+      expect(restored.toJson(), document.toJson());
+    });
+
+    test('preserves consecutive empty paragraphs', () {
+      const markdown = 'first\n\n\nlast';
+      final document = markdownToDocument(markdown);
+      final encoded = documentToMarkdown(document);
+      final restored = markdownToDocument(encoded);
+
+      expect(document.root.children, hasLength(4));
+      expect(document.root.children[1].delta?.isEmpty, isTrue);
+      expect(document.root.children[2].delta?.isEmpty, isTrue);
+      expect(encoded, '$markdown\n');
+      expect(restored.toJson(), document.toJson());
+    });
+
+    test('preserves empty paragraphs around headings and lists', () {
+      const markdown = '''asdfasdf
+
+# 안녕하세요
+
+## 안녕하십니까 백과사전
+
+음료수
+
+- 일번
+- 이번
+- 삼번
+
+테스트''';
+      final document = markdownToDocument(markdown);
+      final encoded = documentToMarkdown(document);
+      final restored = markdownToDocument(encoded);
+
+      expect(document.root.children, hasLength(13));
+      expect(
+        document.root.children
+            .where(
+              (node) =>
+                  node.type == ParagraphBlockKeys.type &&
+                  (node.delta?.isEmpty ?? false),
+            )
+            .length,
+        5,
+      );
+      expect(
+        encoded,
+        '${markdown.replaceAll(RegExp('^- ', multiLine: true), '* ')}\n',
+      );
+      expect(restored.toJson(), document.toJson());
+    });
+
+    test('does not preserve empty lines inside fenced code blocks', () {
+      const markdown = '```\nfirst\n\nlast\n```';
+      final document = markdownToDocument(
+        markdown,
+        markdownParsers: const [_FencedCodeParser()],
+      );
+
+      expect(document.root.children, hasLength(1));
+      expect(
+        document.root.children.single.delta?.toPlainText(),
+        'first\n\nlast',
+      );
+    });
+
+    test('does not preserve empty lines inside indented code blocks', () {
+      const markdown = '    first\n\n    last';
+      final document = markdownToDocument(
+        markdown,
+        markdownParsers: const [_FencedCodeParser()],
+      );
+
+      expect(document.root.children, hasLength(1));
+      expect(
+        document.root.children.single.delta?.toPlainText(),
+        'first\n\nlast',
+      );
     });
 
     test('documentToMarkdown()', () {
@@ -43,9 +147,11 @@ void main() {
 ![image](https://example.com/image.png)''';
       final document = markdownToDocument(markdown);
       final nodes = document.root.children;
-      expect(nodes.length, 2);
+      expect(nodes.length, 3);
       expect(nodes[0].delta?.toPlainText(), 'This is the first line');
-      expect(nodes[1].attributes['url'], 'https://example.com/image.png');
+      expect(nodes[1].type, ParagraphBlockKeys.type);
+      expect(nodes[1].delta?.isEmpty, isTrue);
+      expect(nodes[2].attributes['url'], 'https://example.com/image.png');
     });
 
     test('paragraph + image without \n', () {
@@ -90,6 +196,24 @@ void main() {
       );
     });
   });
+}
+
+class _FencedCodeParser extends CustomMarkdownParser {
+  const _FencedCodeParser();
+
+  @override
+  List<Node> transform(
+    md.Node element,
+    List<CustomMarkdownParser> parsers, {
+    MarkdownListType listType = MarkdownListType.unknown,
+    int? startNumber,
+  }) {
+    if (element is! md.Element || element.tag != 'pre') {
+      return [];
+    }
+
+    return [paragraphNode(text: element.textContent.trimRight())];
+  }
 }
 
 const testDocument = '''{

@@ -352,7 +352,7 @@ If you have questions or feedback, please submit an issue on Github or join the 
 
       final result = markdownToDocument(markdown);
       final data = jsonDecode(example);
-      expect(result.toJson(), data);
+      expect(_withoutEmptyParagraphs(result.toJson()), data);
     });
 
     test('test nested list', () async {
@@ -376,7 +376,35 @@ If you have questions or feedback, please submit an issue on Github or join the 
 ''';
       final result = markdownToDocument(markdown);
       final data = jsonDecode(example4);
-      expect(result.toJson(), data);
+      expect(_withoutEmptyParagraphs(result.toJson()), data);
     });
   });
+}
+
+Object? _withoutEmptyParagraphs(Object? value) {
+  if (value is List) {
+    return value
+        .where((item) => !_isEmptyParagraph(item))
+        .map(_withoutEmptyParagraphs)
+        .toList();
+  }
+
+  if (value is Map) {
+    return value.map(
+      (key, item) => MapEntry(key, _withoutEmptyParagraphs(item)),
+    );
+  }
+
+  return value;
+}
+
+bool _isEmptyParagraph(Object? value) {
+  if (value is! Map || value['type'] != ParagraphBlockKeys.type) {
+    return false;
+  }
+
+  final data = value['data'];
+  return data is Map &&
+      data['delta'] is List &&
+      (data['delta'] as List).isEmpty;
 }

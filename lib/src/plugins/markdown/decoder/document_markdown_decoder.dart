@@ -7,6 +7,8 @@ import 'package:markdown/markdown.dart' as md;
 
 import 'custom_syntaxes/formula_syntax.dart';
 
+const _emptyParagraphMarker = '\u{E000}appflowy-empty-paragraph\u{E001}';
+
 class DocumentMarkdownDecoder extends Converter<String, Document> {
   DocumentMarkdownDecoder({
     this.markdownElementParsers = const [],
@@ -18,7 +20,7 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
 
   @override
   Document convert(String input) {
-    final formattedMarkdown = _formatMarkdown(input);
+    final markdown = _formatMarkdown(_replaceEmptyLinesWithParagraphs(input));
     final List<md.Node> mdNodes = md.Document(
       extensionSet: md.ExtensionSet.gitHubFlavored,
       inlineSyntaxes: [
@@ -27,7 +29,7 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
         UnderlineInlineSyntax(),
       ],
       encodeHtml: false,
-    ).parse(formattedMarkdown);
+    ).parse(markdown);
 
     final document = Document.blank();
     final nodes = mdNodes
@@ -44,6 +46,10 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
 
   // handle node itself and its children
   List<Node> _parseNode(md.Node mdNode) {
+    if (mdNode.textContent == _emptyParagraphMarker) {
+      return [paragraphNode()];
+    }
+
     List<Node> nodes = [];
 
     for (final parser in markdownElementParsers) {
@@ -88,5 +94,66 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
     // Add another rules here.
 
     return result;
+  }
+
+  String _replaceEmptyLinesWithParagraphs(String markdown) {
+    final lines = markdown.replaceAll('\r\n', '\n').split('\n');
+    final firstContentIndex =
+        lines.indexWhere((line) => line.trim().isNotEmpty);
+    final lastContentIndex = lines.lastIndexWhere(
+      (line) => line.trim().isNotEmpty,
+    );
+    String? fenceCharacter;
+    var fenceLength = 0;
+
+    for (var index = 0; index < lines.length; index++) {
+      final trimmed = lines[index].trimLeft();
+      final fenceMatch = RegExp('^(`{3,}|~{3,})').firstMatch(trimmed);
+
+      if (fenceMatch != null) {
+        final fence = fenceMatch.group(1)!;
+
+        if (fenceCharacter == null) {
+          fenceCharacter = fence[0];
+          fenceLength = fence.length;
+        } else if (fence[0] == fenceCharacter && fence.length >= fenceLength) {
+          fenceCharacter = null;
+          fenceLength = 0;
+        }
+        continue;
+      }
+
+      if (fenceCharacter != null || lines[index].trim().isNotEmpty) {
+        continue;
+      }
+
+      if (index <= firstContentIndex || index >= lastContentIndex) {
+        continue;
+      }
+
+      final previousContentIndex = lines.lastIndexWhere(
+        (line) => line.trim().isNotEmpty,
+        index - 1,
+      );
+      final nextContentIndex = lines.indexWhere(
+        (line) => line.trim().isNotEmpty,
+        index + 1,
+      );
+
+      if (previousContentIndex >= 0 &&
+          nextContentIndex >= 0 &&
+          _isIndentedCodeLine(lines[previousContentIndex]) &&
+          _isIndentedCodeLine(lines[nextContentIndex])) {
+        continue;
+      }
+
+      lines[index] = '\n$_emptyParagraphMarker\n';
+    }
+
+    return lines.join('\n');
+  }
+
+  bool _isIndentedCodeLine(String line) {
+    return line.startsWith('    ') || line.startsWith('\t');
   }
 }

@@ -69,8 +69,13 @@ Add the necessary import statements at the top of your Dart file.
 Here is the complete Dart file with the above steps:
 ''';
       final result = markdownToDocument(markdown);
+      final numberedLists = result.root.children
+          .where((node) => node.type == NumberedListBlockKeys.type)
+          .toList();
+
+      expect(numberedLists, hasLength(3));
       expect(
-        result.nodeAtPath([0])!.toJson(),
+        numberedLists[0].toJson(),
         {
           'type': 'numbered_list',
           'data': {
@@ -84,7 +89,7 @@ Here is the complete Dart file with the above steps:
         },
       );
       expect(
-        result.nodeAtPath([2])!.toJson(),
+        numberedLists[1].toJson(),
         {
           'type': 'numbered_list',
           'data': {
@@ -99,7 +104,7 @@ Here is the complete Dart file with the above steps:
         },
       );
       expect(
-        result.nodeAtPath([4])!.toJson(),
+        numberedLists[2].toJson(),
         {
           'type': 'numbered_list',
           'data': {
