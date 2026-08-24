@@ -41,6 +41,10 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
       document.insert([0], nodes);
     }
 
+    if (document.last?.type == ImageBlockKeys.type) {
+      document.insert([document.root.children.length], [paragraphNode()]);
+    }
+
     return document;
   }
 

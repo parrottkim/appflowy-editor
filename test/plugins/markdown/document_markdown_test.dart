@@ -136,9 +136,10 @@ void main() {
 ![image](https://example.com/image.png)''';
       final document = markdownToDocument(markdown);
       final nodes = document.root.children;
-      expect(nodes.length, 2);
+      expect(nodes.length, 3);
       expect(nodes[0].delta?.toPlainText(), 'This is the first line');
       expect(nodes[1].attributes['url'], 'https://example.com/image.png');
+      expect(nodes[2].delta?.isEmpty, isTrue);
     });
 
     test('paragraph + image with double \n', () {
@@ -147,11 +148,12 @@ void main() {
 ![image](https://example.com/image.png)''';
       final document = markdownToDocument(markdown);
       final nodes = document.root.children;
-      expect(nodes.length, 3);
+      expect(nodes.length, 4);
       expect(nodes[0].delta?.toPlainText(), 'This is the first line');
       expect(nodes[1].type, ParagraphBlockKeys.type);
       expect(nodes[1].delta?.isEmpty, isTrue);
       expect(nodes[2].attributes['url'], 'https://example.com/image.png');
+      expect(nodes[3].delta?.isEmpty, isTrue);
     });
 
     test('paragraph + image without \n', () {
@@ -159,9 +161,21 @@ void main() {
           '''This is the first line![image](https://example.com/image.png)''';
       final document = markdownToDocument(markdown);
       final nodes = document.root.children;
-      expect(nodes.length, 2);
+      expect(nodes.length, 3);
       expect(nodes[0].delta?.toPlainText(), 'This is the first line');
       expect(nodes[1].attributes['url'], 'https://example.com/image.png');
+      expect(nodes[2].delta?.isEmpty, isTrue);
+    });
+
+    test('adds a trailing paragraph when markdown ends with an image', () {
+      const markdown = '![](https://example.com/image.png)';
+      final document = markdownToDocument(markdown);
+      final nodes = document.root.children;
+
+      expect(nodes, hasLength(2));
+      expect(nodes.first.type, ImageBlockKeys.type);
+      expect(nodes.last.type, ParagraphBlockKeys.type);
+      expect(nodes.last.delta?.isEmpty, isTrue);
     });
 
     // Regression test for https://github.com/AppFlowy-IO/AppFlowy/issues/8486
