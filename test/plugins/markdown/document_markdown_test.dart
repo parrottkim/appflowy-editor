@@ -178,6 +178,25 @@ void main() {
       expect(nodes.last.delta?.isEmpty, isTrue);
     });
 
+    test('preserves multiple images separated by paragraphs', () {
+      const firstUrl =
+          'https://dev.cdn.dan-tech.com/files/inline-images/report/317/2026/08/39e50e25-1b77-49dd-849d-46970abba9b7.png';
+      const secondUrl =
+          'https://dev.cdn.dan-tech.com/files/inline-images/report/317/2026/08/645016c2-caad-4703-bd64-f566067a3029.png';
+      const markdown = '''first
+![]($firstUrl)
+middle
+![]($secondUrl)''';
+
+      final document = markdownToDocument(markdown);
+      final imageUrls = document.root.children
+          .where((node) => node.type == ImageBlockKeys.type)
+          .map((node) => node.attributes[ImageBlockKeys.url])
+          .toList();
+
+      expect(imageUrls, [firstUrl, secondUrl]);
+    });
+
     // Regression test for https://github.com/AppFlowy-IO/AppFlowy/issues/8486
     // documentToMarkdown() must not mutate the source document when processing
     // nested (indented) list items.

@@ -95,7 +95,11 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
       (match) => '${match[1]}\n\n![${match[2]}](${match[3]})',
     );
 
-    // Add another rules here.
+    // Rule 3: single '\n' between image and text, add double '\n'
+    result = result.replaceAllMapped(
+      RegExp(r'(!\[[^\]]*\]\([^)]+\))\n([^\n])'),
+      (match) => '${match[1]}\n\n${match[2]}',
+    );
 
     return result;
   }
