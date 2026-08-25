@@ -8,6 +8,10 @@ class ImageNodeParser extends NodeParser {
 
   @override
   String transform(Node node, DocumentMarkdownEncoder? encoder) {
-    return '![](${node.attributes[ImageBlockKeys.url]})';
+    final nextNode = node.next;
+    final isTrailingImageParagraph =
+        nextNode?.extraInfos?['markdownTrailingImageParagraph'] == true;
+    final suffix = nextNode == null || isTrailingImageParagraph ? '' : '\n';
+    return '![](${node.attributes[ImageBlockKeys.url]})$suffix';
   }
 }

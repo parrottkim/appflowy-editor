@@ -42,7 +42,9 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
     }
 
     if (document.last?.type == ImageBlockKeys.type) {
-      document.insert([document.root.children.length], [paragraphNode()]);
+      final trailingParagraph = paragraphNode()
+        ..extraInfos = {'markdownTrailingImageParagraph': true};
+      document.insert([document.root.children.length], [trailingParagraph]);
     }
 
     return document;

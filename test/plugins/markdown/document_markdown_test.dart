@@ -178,6 +178,42 @@ void main() {
       expect(nodes.last.delta?.isEmpty, isTrue);
     });
 
+    test('restores one trailing paragraph after an image markdown round trip',
+        () {
+      const markdown = '![](https://example.com/image.png)';
+      final encoded = documentToMarkdown(markdownToDocument(markdown));
+      final restored = markdownToDocument(encoded);
+      final nodes = restored.root.children;
+
+      expect(encoded, '$markdown\n');
+      expect(nodes, hasLength(2));
+      expect(nodes.first.type, ImageBlockKeys.type);
+      expect(nodes.last.type, ParagraphBlockKeys.type);
+      expect(nodes.last.delta?.isEmpty, isTrue);
+    });
+
+    test('preserves an empty paragraph after an image on a markdown round trip',
+        () {
+      final document = Document(
+        root: pageNode(
+          children: [
+            imageNode(url: 'https://example.com/image.png'),
+            paragraphNode(),
+            paragraphNode(text: 'after image'),
+          ],
+        ),
+      );
+
+      final restored = markdownToDocument(documentToMarkdown(document));
+      final nodes = restored.root.children;
+
+      expect(nodes, hasLength(3));
+      expect(nodes[0].type, ImageBlockKeys.type);
+      expect(nodes[1].type, ParagraphBlockKeys.type);
+      expect(nodes[1].delta?.isEmpty, isTrue);
+      expect(nodes[2].delta?.toPlainText(), 'after image');
+    });
+
     test('preserves multiple images separated by paragraphs', () {
       const firstUrl =
           'https://dev.cdn.dan-tech.com/files/inline-images/report/317/2026/08/39e50e25-1b77-49dd-849d-46970abba9b7.png';
