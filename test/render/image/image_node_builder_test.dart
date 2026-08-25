@@ -36,6 +36,22 @@ void main() async {
       );
     });
 
+    testWidgets('render WebP data URI as a memory image', (tester) async {
+      const webpDataUri =
+          'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA==';
+      final editor = tester.editor
+        ..addNode(imageNode(url: webpDataUri))
+        ..addParagraph();
+
+      await editor.startTesting();
+      await tester.pump();
+
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(image.image, isA<MemoryImage>());
+
+      await editor.dispose();
+    });
+
     testWidgets('cannot see action menu when not editable', (tester) async {
       unawaited(
         mockNetworkImagesFor(() async {

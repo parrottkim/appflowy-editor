@@ -73,7 +73,7 @@ class _ResizableImageState extends State<ResizableImage> {
   Widget _buildResizableImage(BuildContext context) {
     Widget child;
     final src = widget.src;
-    if (isBase64(src)) {
+    if (isBase64ImageSource(src)) {
       // load base64 image (url is raw base64 from web)
       _cacheImage ??= Image.memory(
         dataFromBase64String(src),
